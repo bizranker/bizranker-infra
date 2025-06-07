@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Archives and backups
+*.bak
+*.tar.gz
+*.zip
+
+# System junk
+.DS_Store
+Thumbs.db
+
+# Credentials (NEVER COMMIT THESE)
+*.pem
+*.key
+*.crt
+*.env
+.my.cnf
+
+# Editor & OS metadata
+*.swp
+*.swo
+.vscode/
+.idea/
+
