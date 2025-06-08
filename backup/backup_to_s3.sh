@@ -40,7 +40,9 @@ find /home/naga/ -name '*.sql' -type f -mtime +30 -delete
 find /home/naga/ -name '*.tar.gz' -type f -mtime +30 -delete
 
 # Slack Notification
-curl -X POST -H 'Content-type: application/json' \
-  --data '{"text":"✅ Backup completed successfully on '"$(hostname)"' at '"$(date)"'"}' \
+c# Slack Notification
+curl -X POST -H "Content-type: application/json" \
+  --data "{\"text\":\"✅ Backup completed successfully on $(hostname) at $(date)\"}" \
   "$SLACK_WEBHOOK_URL_BACKUP"
+
 
