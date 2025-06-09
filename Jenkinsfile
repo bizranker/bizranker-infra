@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DB_USER = credentials('backupuser-username')
-        DB_PASS = credentials('mysql-backup-pass')
+        DB_PASS = credentials('backupuser-password')
         BUCKET = 'usreliance-floridasos-backups'
         DB_NAME = 'florida_sos'
         DATE = sh(script: "date +%Y%m%d", returnStdout: true).trim()
