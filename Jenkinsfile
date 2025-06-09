@@ -99,4 +99,3 @@ pipeline {
         }
     }
 }
-Merge branch 'master' of https://github.com/bizranker/bizranker-infra
