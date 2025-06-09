@@ -30,7 +30,7 @@ pipeline {
 
         stage('MySQL Dump') {
             steps {
-                withCredentials([string(credentialsId: 'mysql-backup-pass', variable: 'DB_PASS')]) {
+                withCredentials([string(credentialsId: 'backupuser-password', variable: 'DB_PASS')]) {
                     sh '''
                         mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP" || {
                             echo "❌ mysqldump failed, aborting backup"
