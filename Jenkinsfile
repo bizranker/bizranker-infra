@@ -79,11 +79,12 @@ pipeline {
         stage('Slack Notification') {
             steps {
                 sh """
-                    curl -X POST -H "Content-type: application/json" \
-                    --data '{"text":"✅ Backup completed successfully on $(hostname) at $(date)"}' \
-                    "$SLACK_WEBHOOK"
+                    curl -X POST -H "Content-type: application/json" \\
+                    --data '{\"text\":\"✅ Backup completed successfully on \$(hostname) at \$(date)\"}' \\
+                    "\$SLACK_WEBHOOK"
                 """
+                }
             }
-        }
+
     }
 }
