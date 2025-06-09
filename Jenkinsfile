@@ -1,14 +1,20 @@
 pipeline {
-    agent any
+    agent { label 'master' }
 
     environment {
-        DATE = sh(script: "date +%Y%m%d", returnStdout: true).trim()
-        SNAPSHOT_DIR = "/var/lib/jenkins/backups/web_snapshot_${env.DATE}"
+        DB_USER = credentials('backupuser-username')
+        DB_PASS = credentials('mysql-backup-pass')
+        BUCKET = 'usreliance-floridasos-backups'
         DB_NAME = 'florida_sos'
-        DB_BACKUP = "${env.SNAPSHOT_DIR}/${env.DB_NAME}_${env.DATE}.sql"
-        FILE_BACKUP = "${env.SNAPSHOT_DIR}.tar.gz"
-        WEB_DIR = "/home/naga/web"
+        DATE = sh(script: "date +%Y%m%d", returnStdout: true).trim()
+        SNAPSHOT_DIR = "/var/lib/jenkins/backups/web_snapshot_${DATE}"
+        DB_BACKUP = "${SNAPSHOT_DIR}/${DB_NAME}_${DATE}.sql"
+        FILE_BACKUP = "${SNAPSHOT_DIR}.tar.gz"
+        WEB_DIR = "/var/www/sos/web"
         WEB_SNAPSHOT_LAST = "/var/lib/jenkins/backups/web_snapshot_last"
+        SLACK_WEBHOOK = credentials('slack-webhook-backup')
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
     }
 
     options {
@@ -24,14 +30,12 @@ pipeline {
 
         stage('MySQL Dump') {
             steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'backupuser-username', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASS')
-                ]) {
+                withCredentials([string(credentialsId: 'mysql-backup-pass', variable: 'DB_PASS')]) {
                     sh '''
-                    if ! mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"; then
-                        echo ❌ mysqldump failed, aborting backup
-                        exit 1
-                    fi
+                        mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP" || {
+                            echo "❌ mysqldump failed, aborting backup"
+                            exit 1
+                        }
                     '''
                 }
             }
@@ -39,7 +43,7 @@ pipeline {
 
         stage('Rsync Web Directory') {
             steps {
-                sh 'rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"'
+                sh 'rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR/"'
             }
         }
 
@@ -56,10 +60,10 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
-                    export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-                    export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-                    aws s3 cp "$FILE_BACKUP" "s3://usreliance-floridasos-backups/"
-                    aws s3 cp "$DB_BACKUP" "s3://usreliance-floridasos-backups/"
+                        export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+                        export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+                        aws s3 cp "$DB_BACKUP" "s3://$BUCKET/"
+                        aws s3 cp "$FILE_BACKUP" "s3://$BUCKET/"
                     '''
                 }
             }
@@ -68,8 +72,8 @@ pipeline {
         stage('Update Snapshot Symlink') {
             steps {
                 sh '''
-                rm -f "$WEB_SNAPSHOT_LAST"
-                ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
+                    rm -f "$WEB_SNAPSHOT_LAST"
+                    ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
                 '''
             }
         }
@@ -77,21 +81,19 @@ pipeline {
         stage('Delete Old Backups') {
             steps {
                 sh '''
-                find /var/lib/jenkins/backups -name '*.sql' -type f -mtime +30 -delete
-                find /var/lib/jenkins/backups -name '*.tar.gz' -type f -mtime +30 -delete
+                    find /var/lib/jenkins/backups -name '*.sql' -type f -mtime +30 -delete
+                    find /var/lib/jenkins/backups -name '*.tar.gz' -type f -mtime +30 -delete
                 '''
             }
         }
 
         stage('Slack Notification') {
             steps {
-                withCredentials([string(credentialsId: 'slack-webhook-backup', variable: 'SLACK_WEBHOOK')]) {
-                    sh '''
+                sh '''
                     curl -X POST -H "Content-type: application/json" \
-                    --data '{"text":"✅ Backup completed successfully on '"$(hostname)"' @ '"$(date)"'"}' \
+                    --data '{"text":"✅ Backup completed successfully on '"$(hostname)"' at '"$(date)"'"}' \
                     "$SLACK_WEBHOOK"
-                    '''
-                }
+                '''
             }
         }
     }
