@@ -18,7 +18,7 @@ BUCKET="usreliance-floridasos-backups"
 mkdir -p "$SNAPSHOT_DIR"
 
 # Dump the database
-mysqldump "$DB_NAME" > "$DB_BACKUP"
+mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"
 
 # Create differential file archive
 rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"
