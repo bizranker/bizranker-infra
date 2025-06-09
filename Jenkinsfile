@@ -2,15 +2,10 @@ pipeline {
     agent any
 
     environment {
-        BUCKET = 'usreliance-floridasos-backups'
-        DB_NAME = 'florida_sos'
-        DATE = "${new Date().format('yyyyMMdd')}"
-        SNAPSHOT_DIR = "/var/lib/jenkins/backups/web_snapshot_${DATE}"
-        DB_BACKUP = "${SNAPSHOT_DIR}/${DB_NAME}_${DATE}.sql"
-        FILE_BACKUP = "${SNAPSHOT_DIR}.tar.gz"
-        WEB_DIR = "/var/www/html/demo"  // adjust if needed
-        WEB_SNAPSHOT_LAST = "/var/lib/jenkins/backups/web_snapshot_last"
-        SLACK_WEBHOOK = credentials('slack-webhook-backup')
+        DATE = """${new Date().format('yyyyMMdd')}"""
+        SNAPSHOT_DIR = "/var/lib/jenkins/backups/web_snapshot_${env.DATE}"
+        SNAPSHOT_NAME = "florida_sos_${env.DATE}.sql"
+        COMPRESSED_NAME = "snapshot_${env.DATE}.tar.gz"
     }
 
     options {
@@ -25,65 +20,59 @@ pipeline {
         }
 
         stage('MySQL Dump') {
-        withCredentials([usernamePassword(credentialsId: 'mysql-backup-creds', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASS')]) {
-            sh '''
-                echo "📦 Dumping MySQL database..."
-                mysqldump -h 127.0.0.1 -u $DB_USER -p$DB_PASS $DB_NAME > $DB_BACKUP || {
-                  echo "❌ mysqldump failed, aborting backup"
-                  exit 1
+            steps {
+                withCredentials([string(credentialsId: 'mysql-backup-pass', variable: 'DB_PASS')]) {
+                    sh '''
+                        mysqldump -u backupuser -p${DB_PASS} florida_sos > ${SNAPSHOT_DIR}/${SNAPSHOT_NAME} || {
+                            echo "❌ mysqldump failed, aborting backup"
+                            exit 1
+                        }
+                    '''
                 }
-            '''
-        }
-    }
             }
         }
 
         stage('Rsync Web Directory') {
             steps {
-                sh "rsync -a --delete --link-dest='${WEB_SNAPSHOT_LAST}' '${WEB_DIR}/' '${SNAPSHOT_DIR}'"
+                sh "rsync -av /var/www/sos/web/ ${SNAPSHOT_DIR}/web"
             }
         }
 
         stage('Compress Snapshot') {
             steps {
-                sh "tar -czf '${FILE_BACKUP}' -C \$(dirname '${SNAPSHOT_DIR}') \$(basename '${SNAPSHOT_DIR}')"
+                sh "tar -czf ${SNAPSHOT_DIR}/${COMPRESSED_NAME} -C ${SNAPSHOT_DIR} ."
             }
         }
 
         stage('Upload to S3') {
             steps {
-                sh """
-                    aws s3 cp '${DB_BACKUP}' 's3://${BUCKET}/'
-                    aws s3 cp '${FILE_BACKUP}' 's3://${BUCKET}/'
-                """
+                withCredentials([string(credentialsId: 'aws-cli-profile', variable: 'AWS_PROFILE')]) {
+                    sh "aws s3 cp ${SNAPSHOT_DIR}/${COMPRESSED_NAME} s3://usreliance-backups/ --profile ${AWS_PROFILE}"
+                }
             }
         }
 
         stage('Update Snapshot Symlink') {
             steps {
-                sh """
-                    rm -f '${WEB_SNAPSHOT_LAST}'
-                    ln -s '${SNAPSHOT_DIR}' '${WEB_SNAPSHOT_LAST}'
-                """
+                sh "ln -sfn ${SNAPSHOT_DIR} /var/lib/jenkins/backups/latest"
             }
         }
 
         stage('Delete Old Backups') {
             steps {
-                sh """
-                    find /var/lib/jenkins/backups/ -name '*.sql' -type f -mtime +30 -delete
-                    find /var/lib/jenkins/backups/ -name '*.tar.gz' -type f -mtime +30 -delete
-                """
+                sh "find /var/lib/jenkins/backups -maxdepth 1 -type d -mtime +7 -exec rm -rf {} +"
             }
         }
 
         stage('Slack Notification') {
             steps {
-                sh """
-                    curl -X POST -H "Content-type: application/json" \\
-                    --data '{\"text\":\"✅ Backup completed successfully on \$(hostname) at \$(date)\"}' \\
-                    "\$SLACK_WEBHOOK"
-                """
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
+                    sh '''
+                        curl -X POST -H 'Content-type: application/json' --data "{
+                            \\"text\\": \\"✅ Backup completed for ${DATE}\\"
+                        }" $SLACK_WEBHOOK
+                    '''
+                }
             }
         }
     }
