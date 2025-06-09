@@ -25,15 +25,16 @@ pipeline {
         }
 
         stage('MySQL Dump') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'backupuser-username', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASS')]) {
-                    sh """
-                        if ! mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"; then
-                            echo "❌ mysqldump failed, aborting backup"
-                            exit 1
-                        fi
-                    """
+        withCredentials([usernamePassword(credentialsId: 'mysql-backup-creds', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASS')]) {
+            sh '''
+                echo "📦 Dumping MySQL database..."
+                mysqldump -h 127.0.0.1 -u $DB_USER -p$DB_PASS $DB_NAME > $DB_BACKUP || {
+                  echo "❌ mysqldump failed, aborting backup"
+                  exit 1
                 }
+            '''
+        }
+    }
             }
         }
 
