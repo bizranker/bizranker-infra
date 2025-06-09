@@ -5,11 +5,11 @@ pipeline {
         BUCKET = 'usreliance-floridasos-backups'
         DB_NAME = 'florida_sos'
         DATE = "${new Date().format('yyyyMMdd')}"
-        SNAPSHOT_DIR = "/home/naga/web_snapshot_${DATE}"
+        SNAPSHOT_DIR = "/var/lib/jenkins/backups/web_snapshot_${DATE}"
         DB_BACKUP = "${SNAPSHOT_DIR}/${DB_NAME}_${DATE}.sql"
         FILE_BACKUP = "${SNAPSHOT_DIR}.tar.gz"
-        WEB_DIR = "/home/naga/web"
-        WEB_SNAPSHOT_LAST = "/home/naga/web_snapshot_last"
+        WEB_DIR = "/var/www/html/demo"  // adjust if needed
+        WEB_SNAPSHOT_LAST = "/var/lib/jenkins/backups/web_snapshot_last"
         SLACK_WEBHOOK = credentials('slack-webhook-backup')
     }
 
@@ -70,8 +70,8 @@ pipeline {
         stage('Delete Old Backups') {
             steps {
                 sh """
-                    find /home/naga/ -name '*.sql' -type f -mtime +30 -delete
-                    find /home/naga/ -name '*.tar.gz' -type f -mtime +30 -delete
+                    find /var/lib/jenkins/backups/ -name '*.sql' -type f -mtime +30 -delete
+                    find /var/lib/jenkins/backups/ -name '*.tar.gz' -type f -mtime +30 -delete
                 """
             }
         }
@@ -83,8 +83,7 @@ pipeline {
                     --data '{\"text\":\"✅ Backup completed successfully on \$(hostname) at \$(date)\"}' \\
                     "\$SLACK_WEBHOOK"
                 """
-                }
             }
-
+        }
     }
 }
