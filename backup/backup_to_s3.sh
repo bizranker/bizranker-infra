@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # Stop on any error
+set -e  # Exit immediately on error
 
 # Load environment variables
 source /home/naga/repos/bizranker-infra/.env
@@ -17,8 +17,11 @@ BUCKET="usreliance-floridasos-backups"
 # Create snapshot directory
 mkdir -p "$SNAPSHOT_DIR"
 
-# Dump the database
-mysqldump "$DB_NAME" > "$DB_BACKUP"
+# Dump the database securely
+if ! mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"; then
+  echo "❌ mysqldump failed, aborting backup"
+  exit 1
+fi
 
 # Create differential file archive
 rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"
@@ -35,14 +38,14 @@ aws s3 cp "$FILE_BACKUP" "s3://$BUCKET/"
 rm -f "$WEB_SNAPSHOT_LAST"
 ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
 
-# Delete old backups
+# Delete backups older than 30 days
 find /home/naga/ -name '*.sql' -type f -mtime +30 -delete
 find /home/naga/ -name '*.tar.gz' -type f -mtime +30 -delete
 
-# Slack Notification
-c# Slack Notification
-curl -X POST -H "Content-type: application/json" \
-  --data "{\"text\":\"✅ Backup completed successfully on $(hostname) at $(date)\"}" \
-  "$SLACK_WEBHOOK_URL_BACKUP"
-
+# Slack notification (only if webhook is defined)
+if [ -n "$SLACK_WEBHOOK_URL_BACKUP" ]; then
+  curl -X POST -H "Content-type: application/json" \
+    --data "{\"text\":\"✅ Backup completed successfully on $(hostname) at $(date)\"}" \
+    "$SLACK_WEBHOOK_URL_BACKUP"
+fi
 
