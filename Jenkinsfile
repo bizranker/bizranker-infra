@@ -1,41 +1,40 @@
 pipeline {
     agent {
-        label 'master'
+        label 'master'  // Ensures it runs only on the master node
     }
 
     environment {
-        ENV_FILE = "${WORKSPACE}/.env"
+        ENV_PATH = '/home/jenkins/repos/bizranker-infra/.env'  // Absolute path to your .env file
     }
 
     stages {
-        stage('Load Environment') {
-            steps {
-                script {
-                    def envFile = readFile("${ENV_FILE}").split("\n")
-                    envFile.each {
-                        if (it.trim() && !it.startsWith("#")) {
-                            def (key, value) = it.tokenize("=")
-                            env[key.trim()] = value.replaceAll('^"|"$', '')
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Run Backup Script') {
             steps {
-                sh 'bash backup/backup_to_s3.sh'
+                sh '''
+                    echo "🔄 Loading environment from $ENV_PATH"
+                    if [ ! -f "$ENV_PATH" ]; then
+                      echo "❌ .env file not found at $ENV_PATH"
+                      exit 1
+                    fi
+
+                    # Load environment variables and run backup
+                    set -a
+                    source "$ENV_PATH"
+                    set +a
+
+                    echo "✅ Environment loaded for $DB_NAME"
+                    bash /home/jenkins/repos/bizranker-infra/backup/backup_to_s3.sh
+                '''
             }
         }
     }
 
     post {
-        failure {
-            echo "❌ Backup job failed. Please check logs or Slack for errors."
-        }
         success {
-            echo "✅ Backup job completed successfully!"
+            echo '✅ Backup completed successfully!'
+        }
+        failure {
+            echo '❌ Backup job failed. Please check Jenkins logs and Slack.'
         }
     }
 }
-
