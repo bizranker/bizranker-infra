@@ -27,13 +27,16 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Wait briefly to ensure file system catches up
-sleep 1
+# Wait up to 5 seconds for SQL dump file to appear
+for i in {1..5}; do
+  if [ -f "$DB_BACKUP" ]; then
+    break
+  fi
+  echo "⏳ Waiting for $DB_BACKUP to finish writing..."
+  sleep 1
+done
 
-# DEBUG: Show if the SQL file exists yet
-ls -l "$DB_BACKUP"
-
-# Verify that the .sql file was actually created
+# Final check if still missing
 if [ ! -f "$DB_BACKUP" ]; then
   echo "❌ SQL dump file $DB_BACKUP was not found. Aborting compression."
   exit 1
