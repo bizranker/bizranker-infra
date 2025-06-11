@@ -3,6 +3,10 @@ pipeline {
         label 'master'
     }
 
+    options {
+        shell '/bin/bash'  // 🔥 This forces Jenkins to use bash instead of sh
+    }
+
     environment {
         ENV_PATH = '/home/jenkins/repos/bizranker-infra/.env'
     }
@@ -11,7 +15,6 @@ pipeline {
         stage('Run Backup Script') {
             steps {
                 sh '''
-                    #!/bin/bash
                     echo "🔄 Loading environment from $ENV_PATH"
                     if [ ! -f "$ENV_PATH" ]; then
                       echo "❌ .env file not found at $ENV_PATH"
