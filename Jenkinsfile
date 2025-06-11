@@ -4,8 +4,8 @@ pipeline {
     }
 
     environment {
-        ENV_PATH = '/home/jenkins/repos/bizranker-infra/.env'
-    }
+    ENV_PATH = '/var/lib/jenkins/bizranker-infra/.env'
+}
 
     stages {
         stage('Run Backup Script') {
