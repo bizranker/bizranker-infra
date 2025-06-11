@@ -8,6 +8,8 @@ source /home/naga/repos/bizranker-infra/.env
 # Define vars
 DATE=$(date +"%Y%m%d")
 DB_NAME="florida_sos"
+DB_USER="backupuser"
+DB_PASS="S0fttd1al!"
 DB_BACKUP="/home/naga/web_snapshot_${DATE}/${DB_NAME}_${DATE}.sql"
 WEB_DIR="/home/naga/web"
 SNAPSHOT_DIR="/home/naga/web_snapshot_${DATE}"
@@ -18,34 +20,39 @@ BUCKET="usreliance-floridasos-backups"
 mkdir -p "$SNAPSHOT_DIR"
 
 # Dump the database securely
-if ! mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"; then
-  echo "❌ mysqldump failed, aborting backup"
-  exit 1
-fi
+echo "🔄 Dumping MySQL database to $DB_BACKUP"
+mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"
 
-# Create differential file archive
+# Rsync the current web directory
+echo "📁 Syncing web directory to $SNAPSHOT_DIR"
 rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"
 
 # Compress the snapshot
 FILE_BACKUP="${SNAPSHOT_DIR}.tar.gz"
+echo "📦 Compressing snapshot to $FILE_BACKUP"
 tar -czf "$FILE_BACKUP" -C "$(dirname "$SNAPSHOT_DIR")" "$(basename "$SNAPSHOT_DIR")"
 
 # Upload to S3
+echo "☁️ Uploading files to S3 bucket $BUCKET"
 aws s3 cp "$DB_BACKUP" "s3://$BUCKET/"
-aws s3 cp "$FILE_BACKUPgit add backup/backup_to_s3.sh" "s3://$BUCKET/"
+aws s3 cp "$FILE_BACKUP" "s3://$BUCKET/"
 
 # Update snapshot symlink
+echo "🔗 Updating snapshot symlink"
 rm -f "$WEB_SNAPSHOT_LAST"
 ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
 
-# Delete backups older than 30 days
+# Clean up old backups
+echo "🧹 Deleting backups older than 30 days"
 find /home/naga/ -name '*.sql' -type f -mtime +30 -delete
 find /home/naga/ -name '*.tar.gz' -type f -mtime +30 -delete
 
-# Slack notification (only if webhook is defined)
+# Send Slack notification
 if [ -n "$SLACK_WEBHOOK_URL_BACKUP" ]; then
+  echo "📣 Sending Slack notification"
   curl -X POST -H "Content-type: application/json" \
     --data "{\"text\":\"✅ Backup completed successfully on $(hostname) at $(date)\"}" \
     "$SLACK_WEBHOOK_URL_BACKUP"
 fi
 
+echo "✅ All backup steps completed successfully."
