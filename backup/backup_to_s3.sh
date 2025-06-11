@@ -8,7 +8,7 @@ source /home/naga/repos/bizranker-infra/.env
 # Define vars
 DATE=$(date +"%Y%m%d")
 DB_NAME="florida_sos"
-DB_USER="backupuser"
+DB_USER="backupbot"
 DB_PASS="S0fttd1al!"
 DB_BACKUP="/home/naga/web_snapshot_${DATE}/${DB_NAME}_${DATE}.sql"
 WEB_DIR="/home/naga/web"
