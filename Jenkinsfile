@@ -3,10 +3,14 @@ pipeline {
         label 'master'
     }
 
+    environment {
+        ENV_PATH = '/var/lib/jenkins/bizranker-infra/.env'
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                // 🔥 This line guarantees it pulls latest from GitHub
+                echo '🔁 Pulling latest code from GitHub...'
                 checkout scm
             }
         }
@@ -30,10 +34,6 @@ pipeline {
                 '''
             }
         }
-    }
-
-    environment {
-        ENV_PATH = '/var/lib/jenkins/bizranker-infra/.env'
     }
 
     post {
