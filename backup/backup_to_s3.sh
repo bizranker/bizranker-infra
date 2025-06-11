@@ -20,8 +20,12 @@ BUCKET="usreliance-floridasos-backups"
 mkdir -p "$SNAPSHOT_DIR"
 
 # Dump the database securely
-echo "🔄 Dumping MySQL database to $DB_BACKUP"
+echo "🗄️  Dumping MySQL database to $DB_BACKUP"
 mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"
+if [ $? -ne 0 ]; then
+  echo "❌ mysqldump failed for user $DB_USER. Aborting."
+  exit 1
+fi
 
 # Rsync the current web directory
 echo "📁 Syncing web directory to $SNAPSHOT_DIR"
