@@ -19,7 +19,7 @@ pipeline {
                     fi
 
                     set -a
-                    source "$ENV_PATH"
+                    . "$ENV_PATH"  # ← THIS is the correct way in sh
                     set +a
 
                     echo "✅ Environment loaded for $DB_NAME"
@@ -37,4 +37,4 @@ pipeline {
             echo '❌ Backup job failed. Please check Jenkins logs and Slack.'
         }
     }
-}  // ← 🔥 THIS was missing!
+}
