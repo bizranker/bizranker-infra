@@ -44,10 +44,6 @@ if [ ! -f "$DB_BACKUP" ]; then
   exit 1
 fi
 
-# Rsync the current web directory
-echo "📁 Syncing web directory to $SNAPSHOT_DIR"
-rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"
-
 # Compress the snapshot
 FILE_BACKUP="${SNAPSHOT_DIR}.tar.gz"
 echo "📦 Compressing snapshot to $FILE_BACKUP"
