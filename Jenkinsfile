@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'master'
+    }
 
     environment {
         ENV_FILE = "${WORKSPACE}/.env"
@@ -29,10 +31,10 @@ pipeline {
 
     post {
         failure {
-            echo "Backup job failed. Please check logs or Slack for errors."
+            echo "❌ Backup job failed. Please check logs or Slack for errors."
         }
         success {
-            echo "Backup job completed successfully!"
+            echo "✅ Backup job completed successfully!"
         }
     }
 }
