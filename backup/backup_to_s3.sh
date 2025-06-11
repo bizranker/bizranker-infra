@@ -30,6 +30,9 @@ fi
 # Wait briefly to ensure file system catches up
 sleep 1
 
+# DEBUG: Show if the SQL file exists yet
+ls -l "$DB_BACKUP"
+
 # Verify that the .sql file was actually created
 if [ ! -f "$DB_BACKUP" ]; then
   echo "❌ SQL dump file $DB_BACKUP was not found. Aborting compression."
