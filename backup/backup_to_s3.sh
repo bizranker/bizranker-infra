@@ -27,6 +27,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Wait briefly to ensure file system catches up
+sleep 1
+
+# Verify that the .sql file was actually created
+if [ ! -f "$DB_BACKUP" ]; then
+  echo "❌ SQL dump file $DB_BACKUP was not found. Aborting compression."
+  exit 1
+fi
+
 # Rsync the current web directory
 echo "📁 Syncing web directory to $SNAPSHOT_DIR"
 rsync -a --delete --link-dest="$WEB_SNAPSHOT_LAST" "$WEB_DIR/" "$SNAPSHOT_DIR"
