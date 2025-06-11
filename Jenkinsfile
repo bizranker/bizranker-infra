@@ -1,23 +1,23 @@
 pipeline {
     agent {
-        label 'master'  // Ensures it runs only on the master node
+        label 'master'
     }
 
     environment {
-        ENV_PATH = '/home/jenkins/repos/bizranker-infra/.env'  // Absolute path to your .env file
+        ENV_PATH = '/home/jenkins/repos/bizranker-infra/.env'
     }
 
     stages {
         stage('Run Backup Script') {
             steps {
                 sh '''
+                    #!/bin/bash
                     echo "🔄 Loading environment from $ENV_PATH"
                     if [ ! -f "$ENV_PATH" ]; then
                       echo "❌ .env file not found at $ENV_PATH"
                       exit 1
                     fi
 
-                    # Load environment variables and run backup
                     set -a
                     source "$ENV_PATH"
                     set +a
