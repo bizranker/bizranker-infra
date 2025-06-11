@@ -3,7 +3,7 @@
 set -e  # Exit immediately on error
 
 # Load environment variables
-source /home/naga/repos/bizranker-infra/.env
+source /opt/usreliance/env/backup.env
 
 # Define vars
 DATE=$(date +"%Y%m%d")
