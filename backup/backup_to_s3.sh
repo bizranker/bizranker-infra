@@ -10,16 +10,20 @@ DATE=$(date +"%Y%m%d")
 DB_NAME="florida_sos"
 DB_USER="backupuser"
 DB_PASS="S0fttd1al!"
-DB_BACKUP="/home/naga/web_snapshot_${DATE}/${DB_NAME}_${DATE}.sql"
-WEB_DIR="/home/naga/web"
-SNAPSHOT_DIR="/home/naga/web_snapshot_${DATE}"
-WEB_SNAPSHOT_LAST="/home/naga/web_snapshot_last"
+
+# Use Jenkins workspace as base
+WORKSPACE="/var/lib/jenkins/workspace/bizranker-infra-backup_master"
+SNAPSHOT_DIR="${WORKSPACE}/web_snapshot_${DATE}"
+DB_BACKUP="${SNAPSHOT_DIR}/${DB_NAME}_${DATE}.sql"
+WEB_DIR="${WORKSPACE}/web"
+WEB_SNAPSHOT_LAST="${WORKSPACE}/web_snapshot_last"
+FILE_BACKUP="${SNAPSHOT_DIR}.tar.gz"
 BUCKET="usreliance-floridasos-backups"
 
 # Create snapshot directory
 mkdir -p "$SNAPSHOT_DIR"
 
-# Dump the database securely
+# Dump the database
 echo "🗄️  Dumping MySQL database to $DB_BACKUP"
 mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"
 if [ $? -ne 0 ]; then
@@ -27,7 +31,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Wait up to 5 seconds for SQL dump file to appear
+# Wait for SQL dump to appear
 for i in {1..5}; do
   if [ -f "$DB_BACKUP" ]; then
     echo "✅ SQL dump file $DB_BACKUP detected after $i second(s)."
@@ -38,14 +42,13 @@ for i in {1..5}; do
   fi
 done
 
-# Final check if still missing
+# Final check
 if [ ! -f "$DB_BACKUP" ]; then
   echo "❌ SQL dump file $DB_BACKUP was not found. Aborting compression."
   exit 1
 fi
 
 # Compress the snapshot
-FILE_BACKUP="${SNAPSHOT_DIR}.tar.gz"
 echo "📦 Compressing snapshot to $FILE_BACKUP"
 tar -czf "$FILE_BACKUP" -C "$(dirname "$SNAPSHOT_DIR")" "$(basename "$SNAPSHOT_DIR")"
 
@@ -59,10 +62,10 @@ echo "🔗 Updating snapshot symlink"
 rm -f "$WEB_SNAPSHOT_LAST"
 ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
 
-# Clean up old backups
+# Clean up old backups in workspace
 echo "🧹 Deleting backups older than 30 days"
-find /home/naga/ -name '*.sql' -type f -mtime +30 -delete
-find /home/naga/ -name '*.tar.gz' -type f -mtime +30 -delete
+find "$WORKSPACE" -name '*.sql' -type f -mtime +30 -delete
+find "$WORKSPACE" -name '*.tar.gz' -type f -mtime +30 -delete
 
 # Send Slack notification
 if [ -n "$SLACK_WEBHOOK_URL_BACKUP" ]; then
