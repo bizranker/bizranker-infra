@@ -30,10 +30,12 @@ fi
 # Wait up to 5 seconds for SQL dump file to appear
 for i in {1..5}; do
   if [ -f "$DB_BACKUP" ]; then
+    echo "✅ SQL dump file $DB_BACKUP detected after $i second(s)."
     break
+  else
+    echo "⏳ Waiting for $DB_BACKUP to finish writing... ($i/5)"
+    sleep 1
   fi
-  echo "⏳ Waiting for $DB_BACKUP to finish writing..."
-  sleep 1
 done
 
 # Final check if still missing
