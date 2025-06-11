@@ -3,11 +3,14 @@ pipeline {
         label 'master'
     }
 
-    environment {
-        ENV_PATH = '/var/lib/jenkins/bizranker-infra/.env'
-    }
-
     stages {
+        stage('Checkout') {
+            steps {
+                // 🔥 This line guarantees it pulls latest from GitHub
+                checkout scm
+            }
+        }
+
         stage('Run Backup Script') {
             steps {
                 sh '''
@@ -19,7 +22,7 @@ pipeline {
                     fi
 
                     set -a
-                    . "$ENV_PATH"  # ← THIS is the correct way in sh
+                    . "$ENV_PATH"
                     set +a
 
                     echo "✅ Environment loaded for $DB_NAME"
@@ -27,6 +30,10 @@ pipeline {
                 '''
             }
         }
+    }
+
+    environment {
+        ENV_PATH = '/var/lib/jenkins/bizranker-infra/.env'
     }
 
     post {
