@@ -31,4 +31,10 @@ pipeline {
 
     post {
         success {
-            ec
+            echo '✅ Backup completed successfully!'
+        }
+        failure {
+            echo '❌ Backup job failed. Please check Jenkins logs and Slack.'
+        }
+    }
+}  // ← 🔥 THIS was missing!
