@@ -3,7 +3,7 @@
 set -e  # Exit immediately on error
 
 # Load environment variables
-source /opt/usreliance/env/backup.env
+source /home/naga/env/backup.env
 
 # Define vars
 DATE=$(date +"%Y%m%d")
@@ -11,68 +11,62 @@ DB_NAME="florida_sos"
 DB_USER="backupuser"
 DB_PASS="S0fttd1al!"
 
-# Use Jenkins workspace as base
 WORKSPACE="/var/lib/jenkins/workspace/bizranker-infra-backup_master"
 SNAPSHOT_DIR="${WORKSPACE}/web_snapshot_${DATE}"
 DB_BACKUP="${SNAPSHOT_DIR}/${DB_NAME}_${DATE}.sql"
-WEB_DIR="${WORKSPACE}/web"
 WEB_SNAPSHOT_LAST="${WORKSPACE}/web_snapshot_last"
 FILE_BACKUP="${SNAPSHOT_DIR}.tar.gz"
 BUCKET="usreliance-floridasos-backups"
 
-# Create snapshot directory
+# Voximus config
+VOXIMUS_DIR="/var/www/html/voximus"
+VOXIMUS_ARCHIVE="${WORKSPACE}/voximus_repo_${DATE}.tar.gz"
+VOXIMUS_BUCKET="usreliance-voximus"
+
 mkdir -p "$SNAPSHOT_DIR"
 
-# Dump the database
 echo "🗄️  Dumping MySQL database to $DB_BACKUP"
 mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP"
 if [ $? -ne 0 ]; then
-  echo "❌ mysqldump failed for user $DB_USER. Aborting."
+  echo "❌ mysqldump failed for $DB_USER"
   exit 1
 fi
 
-# Wait for SQL dump to appear
+# Wait briefly for file to flush
 for i in {1..5}; do
-  if [ -f "$DB_BACKUP" ]; then
-    echo "✅ SQL dump file $DB_BACKUP detected after $i second(s)."
-    break
-  else
-    echo "⏳ Waiting for $DB_BACKUP to finish writing... ($i/5)"
-    sleep 1
-  fi
+  [ -f "$DB_BACKUP" ] && echo "✅ SQL dump file ready after $i second(s)" && break
+  echo "⏳ Waiting for $DB_BACKUP... ($i/5)"; sleep 1
 done
 
-# Final check
-if [ ! -f "$DB_BACKUP" ]; then
-  echo "❌ SQL dump file $DB_BACKUP was not found. Aborting compression."
-  exit 1
-fi
+[ ! -f "$DB_BACKUP" ] && echo "❌ SQL dump missing!" && exit 1
 
-# Compress the snapshot
-echo "📦 Compressing snapshot to $FILE_BACKUP"
+echo "📦 Compressing web snapshot"
 tar -czf "$FILE_BACKUP" -C "$(dirname "$SNAPSHOT_DIR")" "$(basename "$SNAPSHOT_DIR")"
 
-# Upload to S3
-echo "☁️ Uploading files to S3 bucket $BUCKET"
+echo "☁️ Uploading FloridaSOS to S3"
 aws s3 cp "$DB_BACKUP" "s3://$BUCKET/"
 aws s3 cp "$FILE_BACKUP" "s3://$BUCKET/"
 
-# Update snapshot symlink
-echo "🔗 Updating snapshot symlink"
+echo "📚 Archiving Voximus Git repo"
+tar -czf "$VOXIMUS_ARCHIVE" -C "$(dirname "$VOXIMUS_DIR")" "$(basename "$VOXIMUS_DIR")"
+
+echo "☁️ Uploading Voximus archive to S3"
+aws s3 cp "$VOXIMUS_ARCHIVE" "s3://$VOXIMUS_BUCKET/backups/"
+
+echo "🔗 Updating symlink to latest snapshot"
 rm -f "$WEB_SNAPSHOT_LAST"
 ln -s "$SNAPSHOT_DIR" "$WEB_SNAPSHOT_LAST"
 
-# Clean up old backups in workspace
-echo "🧹 Deleting backups older than 30 days"
+echo "🧹 Pruning old files (>30 days)"
 find "$WORKSPACE" -name '*.sql' -type f -mtime +30 -delete
 find "$WORKSPACE" -name '*.tar.gz' -type f -mtime +30 -delete
 
-# Send Slack notification
+# Slack notify
 if [ -n "$SLACK_WEBHOOK_URL_BACKUP" ]; then
-  echo "📣 Sending Slack notification"
   curl -X POST -H "Content-type: application/json" \
-    --data "{\"text\":\"✅ Backup completed successfully on $(hostname) at $(date)\"}" \
+    --data "{\"text\":\"✅ Weekly backup complete on $(hostname) at $(date)\"}" \
     "$SLACK_WEBHOOK_URL_BACKUP"
 fi
 
-echo "✅ All backup steps completed successfully."
+echo "✅ Backup job finished!"
+
