@@ -48,8 +48,8 @@ module "k3s_master_01" {
   shape            = var.command_center_shape
   ocpus            = var.command_center_ocpus
   memory_in_gbs    = var.command_center_memory
-  subnet_id        = var.public_subnet_id
-  assign_public_ip = true
+  subnet_id        = var.private_subnet_id
+  assign_public_ip = false
 
   image_id       = var.ubuntu_image_id
   ssh_public_key = file(var.ssh_public_key_path)
@@ -82,6 +82,31 @@ module "api_01" {
   tags = {
     project = "bizranker"
     class   = "api_node"
+    managed = "terraform"
+  }
+}
+
+
+module "k3s_worker_01" {
+  source = "../../modules/oci_compute_instance"
+
+  availability_domain = var.availability_domain
+  compartment_id      = var.compartment_id
+  display_name        = "bizranker-k3s-worker-01"
+  hostname_label      = "bizranker-k3s-worker-01"
+
+  shape            = var.command_center_shape
+  ocpus            = var.command_center_ocpus
+  memory_in_gbs    = var.command_center_memory
+  subnet_id        = var.private_subnet_id
+  assign_public_ip = false
+
+  image_id       = var.ubuntu_image_id
+  ssh_public_key = file(var.ssh_public_key_path)
+
+  tags = {
+    project = "bizranker"
+    class   = "k3s_worker_node"
     managed = "terraform"
   }
 }

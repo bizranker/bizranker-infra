@@ -27,3 +27,7 @@ variable "command_center_memory" {
   type    = number
   default = 12
 }
+
+variable "private_subnet_id" {
+  type = string
+}
