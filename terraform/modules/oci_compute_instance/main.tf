@@ -4,10 +4,14 @@ resource "oci_core_instance" "this" {
   display_name        = var.display_name
   shape               = var.shape
 
-  shape_config {
+dynamic "shape_config" {
+  for_each = can(regex("Flex$", var.shape)) ? [1] : []
+
+  content {
     ocpus         = var.ocpus
     memory_in_gbs = var.memory_in_gbs
   }
+}
 
   create_vnic_details {
     subnet_id                 = var.subnet_id
@@ -20,7 +24,7 @@ resource "oci_core_instance" "this" {
   source_details {
     source_type             = "image"
     source_id               = var.image_id
-    boot_volume_size_in_gbs = 50
+    boot_volume_size_in_gbs = 47
   }
 
   metadata = {

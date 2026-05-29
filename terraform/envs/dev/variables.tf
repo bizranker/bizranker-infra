@@ -7,6 +7,7 @@ variable "availability_domain" { type = string }
 variable "compartment_id" { type = string }
 variable "public_subnet_id" { type = string }
 variable "ubuntu_image_id" { type = string }
+variable "oracle_linux_9_image_id" { type = string }
 
 variable "ssh_public_key_path" {
   type    = string

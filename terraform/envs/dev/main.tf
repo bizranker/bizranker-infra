@@ -45,13 +45,13 @@ module "k3s_master_01" {
   display_name        = "bizranker-k3s-master-01"
   hostname_label      = "bizranker-k3s-master-01"
 
-  shape            = var.command_center_shape
+  shape            = "VM.Standard.E2.1.Micro"
   ocpus            = var.command_center_ocpus
   memory_in_gbs    = var.command_center_memory
   subnet_id        = var.private_subnet_id
   assign_public_ip = false
 
-  image_id       = var.ubuntu_image_id
+  image_id       = var.oracle_linux_9_image_id
   ssh_public_key = file(var.ssh_public_key_path)
 
   tags = {
@@ -95,13 +95,13 @@ module "k3s_worker_01" {
   display_name        = "bizranker-k3s-worker-01"
   hostname_label      = "bizranker-k3s-worker-01"
 
-  shape            = var.command_center_shape
+  shape            = "VM.Standard.E2.1.Micro"
   ocpus            = var.command_center_ocpus
   memory_in_gbs    = var.command_center_memory
   subnet_id        = var.private_subnet_id
   assign_public_ip = false
 
-  image_id       = var.ubuntu_image_id
+  image_id       = var.oracle_linux_9_image_id
   ssh_public_key = file(var.ssh_public_key_path)
 
   tags = {
