@@ -328,3 +328,50 @@ The project is intended to mature into the closest practical implementation of t
 
 The journey continues.
 
+
+---
+
+# Command Center Milestone: GKE + ArgoCD Operational
+
+## Summary
+
+The BizRanker Command Center is now operational on Google Kubernetes Engine.
+
+After OCI resource limitations slowed Kubernetes expansion, the platform pivoted quickly to GCP. Within one development cycle, GKE Autopilot was provisioned, kubectl access was configured, ArgoCD was installed, debugged, tuned, and brought fully online.
+
+## Current Operational Stack
+
+- Google Kubernetes Engine Autopilot
+- ArgoCD
+- GitHub-backed infrastructure repository
+- kubectl-based operational access
+- GKE managed monitoring components
+- Resource-tuned ArgoCD control plane
+
+## Technical Value Demonstrated
+
+This milestone demonstrates:
+
+- Cloud migration judgment
+- Kubernetes troubleshooting
+- ArgoCD installation and recovery
+- GKE Autopilot scheduling analysis
+- Resource request tuning
+- GitOps platform readiness
+- Incident documentation discipline
+
+## Interview and Investor Relevance
+
+This environment is not theoretical.
+
+It demonstrates real-world platform engineering under constraint:
+
+- OCI quota issues were investigated.
+- GCP was selected as the faster path forward.
+- ArgoCD deployment issues were root-caused.
+- Kubernetes scheduler behavior was analyzed.
+- Resource requests were corrected.
+- The full ArgoCD stack was brought online.
+
+This platform now serves as both operational infrastructure and portfolio evidence.
+

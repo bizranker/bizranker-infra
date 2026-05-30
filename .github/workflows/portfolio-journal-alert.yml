@@ -1,0 +1,19 @@
+name: Portfolio Journal Updated
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/portfolio/**"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"📘 BizRanker Engineering Journal updated: ${{ github.repository }} @ ${{ github.sha }}\"}" \
+            "${{ secrets.SLACK_WEBHOOK_URL }}"
