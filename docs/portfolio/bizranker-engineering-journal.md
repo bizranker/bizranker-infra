@@ -386,3 +386,14 @@ Verified the BizRanker Engineering Journal append pipeline from the local reposi
 
 This confirms that portfolio entries can be drafted quickly, appended to the living engineering journal, committed, and pushed to GitHub.
 
+
+---
+
+# Portfolio Entry - 2026-05-30 15:36:18 PDT
+
+## Backup Slack Webhook Test
+
+Tested the portfolio journal workflow using the existing backup Slack webhook secret.
+
+This confirms whether the legacy Slack integration is still usable.
+
