@@ -23,6 +23,19 @@ jobs:
             exit 0
           fi
 
+          QUOTES=(
+            "Are you brother? Nooo, gawd 🤦‍♂️... yessssss."
+            "We did it, baby. The pipeline has entered the club. 🕺"
+            "GitHub pushed. Slack received. Nobody panic. 😆"
+            "This commit is staying alive, staying alive. 🪩"
+            "Command Center reports: the realm still stands. 🏛️"
+            "PortfolioBot has spoken. Ave Imperium. ⚔️"
+          )
+
+          QUOTE="${QUOTES[$RANDOM % ${#QUOTES[@]}]}"
+
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"📘 BizRanker Engineering Journal updated: ${{ github.repository }} @ ${{ github.sha }}\"}" \
+            --data "{
+              \"text\": \"📘 *BizRanker Engineering Journal Updated*\\n\\n*Repository:* ${{ github.repository }}\\n*Branch:* ${{ github.ref_name }}\\n*Commit:* ${{ github.sha }}\\n*Message:* ${{ github.event.head_commit.message }}\\n\\n_${QUOTE}_\"
+            }" \
             "$WEBHOOK"
