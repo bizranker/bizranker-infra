@@ -12,8 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack notification
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL_BACKUP: ${{ secrets.SLACK_WEBHOOK_URL_BACKUP }}
         run: |
+          WEBHOOK="${SLACK_WEBHOOK_URL:-$SLACK_WEBHOOK_URL_BACKUP}"
+
+          if [ -z "$WEBHOOK" ]; then
+            echo "No Slack webhook configured. Skipping Slack notification."
+            exit 0
+          fi
+
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"📘 BizRanker Engineering Journal updated: ${{ github.repository }} @ ${{ github.sha }}\"}" \
-            "${{ secrets.SLACK_WEBHOOK_URL }}"
+            "$WEBHOOK"
