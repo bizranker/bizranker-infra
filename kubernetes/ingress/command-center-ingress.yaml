@@ -1,0 +1,18 @@
+# Command Center shared ingress placeholder
+#
+# Current production pattern:
+# - grafana.usreliance.com uses grafana-ingress in namespace: monitoring
+# - argocd.usreliance.com uses argocd-ingress in namespace: argocd
+#
+# Reason:
+# A standard Kubernetes Ingress can only route to Services in its own namespace.
+# Since Grafana and ArgoCD live in different namespaces, a single shared Ingress
+# cannot directly route to both services without additional architecture.
+#
+# Future options:
+# 1. Keep one Ingress/static IP per namespace/application.
+# 2. Move public front-door routing to Gateway API.
+# 3. Use an ingress controller pattern that supports cross-namespace routing.
+# 4. Create same-namespace proxy Services, if we intentionally choose that pattern.
+#
+# Do not kubectl apply this file.
